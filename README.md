@@ -30,6 +30,7 @@ _S_DNF_LoosePoints_ 20 => "Number of points for player that give up a round"
 
 # How to Use
 ***Install***
+
 Download the LastManStandingCup.Script.txt file and put it on the dedicated server inside UserData/Scripts/Modes/Trackmania/
 
 ***MatchSetting Example***
@@ -54,6 +55,10 @@ Download the LastManStandingCup.Script.txt file and put it on the dedicated serv
 	</mode_script_settings>
 
 	<startindex>0</startindex>
-	<map><file>F247/ACTUAL/Tombstoned.Map.Gbx</file></map>
+	<map><file>Campaigns/CurrentQuarterly/Summer 2021 - 01.Map.Gbx</file></map>
+	<map><file>Campaigns/CurrentQuarterly/Summer 2021 - 02.Map.Gbx</file></map>
+	<map><file>Campaigns/CurrentQuarterly/Summer 2021 - 03.Map.Gbx</file></map>
+	<map><file>Campaigns/CurrentQuarterly/Summer 2021 - 04.Map.Gbx</file></map>
+	<map><file>Campaigns/CurrentQuarterly/Summer 2021 - 05.Map.Gbx</file></map>
 </playlist>
 ```
