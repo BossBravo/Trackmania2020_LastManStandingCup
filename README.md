@@ -25,3 +25,35 @@ _S_WarmUpTimeout_ -1 => "Warm up timeout"
 _S_PointsRepartition_ "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 
 _S_DNF_LoosePoints_ 20 => "Number of points for player that give up a round"
+
+
+
+# How to Use
+***Install***
+Download the LastManStandingCup.Script.txt file and put it on the dedicated server inside UserData/Scripts/Modes/Trackmania/
+
+***MatchSetting Example***
+```
+<?xml version="1.0" encoding="utf-8" ?>
+<playlist>
+	<gameinfos>
+		<game_mode>0</game_mode>
+		<script_name>Modes/Trackmania/LastManStandingCup</script_name>
+	</gameinfos>
+
+	<mode_script_settings>
+		<setting name="S_PointsStartup" type="integer" value="50"/>
+		<setting name="S_FinishTimeout" type="integer" value="-1"/>
+		<setting name="S_RoundsPerMap" type="integer" value="5"/>
+		<setting name="S_NbOfWinners" type="integer" value="1"/>
+		<setting name="S_WarmUpNb" type="integer" value="0"/>
+		<setting name="S_WarmUpDuration" type="integer" value="20"/>
+		<setting name="S_WarmUpTimeout" type="integer" value="-1"/>
+		<setting name="S_PointsRepartition" type="text" value="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"/>
+		<setting name="S_DNF_LoosePoints" type="integer" value="20"/>
+	</mode_script_settings>
+
+	<startindex>0</startindex>
+	<map><file>F247/ACTUAL/Tombstoned.Map.Gbx</file></map>
+</playlist>
+```
