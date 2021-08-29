@@ -308,7 +308,6 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	// Display Finalist & Looser UI
 	declare Text[][Text] CustomPoints;
 	foreach(Score in Scores) {
-		log(Scores::GetPlayerMatchPoints(Score));
 		if (Scores::GetPlayerMatchPoints(Score) == 0) {
 			CustomPoints[Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
 		}
