@@ -215,7 +215,7 @@ StateMgr::ForcePlayersStates([CupCommon_Const::C_State_Playing]);
 ***
 // Update dossard color
 foreach (Player in AllPlayers) {
-	if (Player.Score != Null && Scores::GetPlayerMatchPoints(Player.Score) == -1) {
+	if (Player.Score != Null && Scores::GetPlayerMatchPoints(Player.Score) == -1000) {
 		Player.Dossard_Color = <0.7, 0., 0.>;
 	} else {
 		Player.Dossard_Color = Race::C_DossardColor_Default;
@@ -308,10 +308,10 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	// Display Finalist & Looser UI
 	declare Text[][Text] CustomPoints;
 	foreach(Score in Scores) {
-		if (Scores::GetPlayerMatchPoints(Score) == 0) {
+		if (Scores::GetPlayerMatchPoints(Score) == -1000) {
 			CustomPoints[Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
 		}
-		else if (Scores::GetPlayerMatchPoints(Score) <= -1) {
+		else if (Scores::GetPlayerMatchPoints(Score) <= -2000) {
 			CustomPoints[Score.User.WebServicesUserId] = [C_Looser_Text, C_Color_Finalist];
 		}
 	}
@@ -394,7 +394,7 @@ Void UpdateScoresTableFooter(Integer _PointsLimit) {
 Boolean CanSpawn(CSmScore _Score) {
 	if (_Score == Null) return False;
 	
-	if (Scores::GetPlayerMatchPoints(_Score) == -2) {
+	if (Scores::GetPlayerMatchPoints(_Score) == -2000) {
 		return False;
 	} else if (MM_IsMatchServer()) {
 		declare Player <=> GetPlayer(_Score.User.Login);
@@ -435,7 +435,7 @@ Integer GetFinishTimeout() {
  */
 Void AnnounceLooser(Text _Name, Integer _Rank) {
 	declare Message = "";
-	declare NewRank = G_NbOfPlayersTotal - _Rank;
+	declare NewRank = G_NbOfPlayersTotal - _Rank + 1;
 	switch (NewRank) {
 		case 1: Message = TL::Compose("$<%1$> takes 1st place!", _Name);
 		case 2: Message = TL::Compose("$<%1$> takes 2nd place!", _Name);
@@ -482,28 +482,34 @@ Void ComputeLatestRaceScores() {
 Void ComputeScores() {
 	declare RoundIsValid = False;
 	declare NbOfLoosers = 0;
+	declare NbOfFinalistLoosers = 0;
 	declare NewLooser = False;
 	
 	Race::SortScores(Race::C_Sort_TotalPoints);
 
-	declare NbOfPlayersActive = 0;
 	declare MaxRoundPoints = 0;
 	foreach (Score in Scores) {
-		if (Scores::GetPlayerMatchPoints(Score) >= 0) NbOfPlayersActive += 1;
 		if (MaxRoundPoints > Scores::GetPlayerRoundPoints(Score)) MaxRoundPoints =  Scores::GetPlayerRoundPoints(Score);
 	}
 	
 	foreach (Score in Scores) {
-		if (Scores::GetPlayerRoundPoints(Score) > 0) RoundIsValid = True;
+		if (Scores::GetPlayerRoundPoints(Score) < 0) RoundIsValid = True;
 		
+		declare Integer NewMatchPoints = Scores::GetPlayerMatchPoints(Score) + Scores::GetPlayerRoundPoints(Score);
+
 		// Already loose
-		if (Scores::GetPlayerMatchPoints(Score) == -2) {
-			Scores::SetPlayerMatchPoints(Score, -2);
+		if (NewMatchPoints == -2000) {
+			Scores::SetPlayerMatchPoints(Score, -2000);
 			NbOfLoosers += 1;
 		} 
+		// New Finalist looser
+		else if (NewMatchPoints > -1000 && NewMatchPoints <= 0) {
+			Scores::SetPlayerMatchPoints(Score, -1000);
+			NbOfFinalistLoosers += 1;
+		} 
 		// New looser
-		else if (Scores::GetPlayerMatchPoints(Score) == -1 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && !NewLooser) {
-			Scores::SetPlayerMatchPoints(Score, -2);
+		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && !NewLooser) {
+			Scores::SetPlayerMatchPoints(Score, -2000);
 			NbOfLoosers += 1;
 			NewLooser = True;
 			AnnounceLooser(Score.User.Name, NbOfLoosers);
@@ -511,7 +517,7 @@ Void ComputeScores() {
 		// Standard round finish
 		else {
 			Scores::AddPlayerMatchPoints(Score, Scores::GetPlayerRoundPoints(Score));
-			if (Scores::GetPlayerMatchPoints(Score) < -2) Scores::SetPlayerMatchPoints(Score, -2);
+			if (NewMatchPoints < -2000) Scores::SetPlayerMatchPoints(Score, -2000);
 		}
 		
 		Scores::AddPlayerMapPoints(Score, Scores::GetPlayerRoundPoints(Score));
@@ -554,7 +560,7 @@ Boolean MatchIsOver() {
 	Log::Log("[Cup] MatchIsOver() check | S_PointsStartup : "^S_PointsStartup);
 	declare NbOfPlayersActive = 0;
 	foreach (Score in Scores) {
-		if (Scores::GetPlayerMatchPoints(Score) >= 0) NbOfPlayersActive += 1;
+		if (Scores::GetPlayerMatchPoints(Score) >= -1000) NbOfPlayersActive += 1;
 	}
 	
 	// If there's only one player they need to reach the points limit to win
