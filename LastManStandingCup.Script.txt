@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-08-29"
+#Const	Version							"2021-09-03"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -501,19 +501,24 @@ Void ComputeScores() {
 		if (NewMatchPoints == -2000) {
 			Scores::SetPlayerMatchPoints(Score, -2000);
 			NbOfLoosers += 1;
-		} 
+		}
 		// New Finalist looser
 		else if (NewMatchPoints > -1000 && NewMatchPoints <= 0) {
 			Scores::SetPlayerMatchPoints(Score, -1000);
 			NbOfFinalistLoosers += 1;
-		} 
+		}
 		// New looser
 		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && !NewLooser) {
 			Scores::SetPlayerMatchPoints(Score, -2000);
 			NbOfLoosers += 1;
 			NewLooser = True;
 			AnnounceLooser(Score.User.Name, NbOfLoosers);
-		} 
+		}
+		// Already finalist and not last
+		else if (Scores::GetPlayerMatchPoints(Score) == -1000 && Scores::GetPlayerRoundPoints(Score) != MaxRoundPoints) {
+			Scores::SetPlayerMatchPoints(Score, -1000);
+			NbOfFinalistLoosers += 1;
+		}
 		// Standard round finish
 		else {
 			Scores::AddPlayerMatchPoints(Score, Scores::GetPlayerRoundPoints(Score));
