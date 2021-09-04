@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-04"
+#Const	Version							"2021-09-04_a"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -484,6 +484,7 @@ Void ComputeScores() {
 	declare NbOfLoosers = 0;
 	declare NbOfFinalistLoosers = 0;
 	declare NewLooser = False;
+	declare LooserName = "";
 	
 	Race::SortScores(Race::C_Sort_TotalPoints);
 
@@ -512,7 +513,7 @@ Void ComputeScores() {
 			Scores::SetPlayerMatchPoints(Score, -2000);
 			NbOfLoosers += 1;
 			NewLooser = True;
-			AnnounceLooser(Score.User.Name, NbOfLoosers);
+			LooserName = Score.User.Name;
 		}
 		// Already finalist but already a looser, no points loose
 		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && NewLooser) {
@@ -533,6 +534,8 @@ Void ComputeScores() {
 		Scores::AddPlayerMapPoints(Score, Scores::GetPlayerRoundPoints(Score));
 		Scores::SetPlayerRoundPoints(Score, 0);
 	}
+
+	if(NewLooser == True) AnnounceLooser(LooserName, NbOfLoosers);
 	
 	if (RoundIsValid) G_NbOfValidRounds += 1;
 }
