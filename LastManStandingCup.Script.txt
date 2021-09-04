@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-04_a"
+#Const	Version							"2021-09-04_b"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -484,7 +484,7 @@ Void ComputeScores() {
 	declare NbOfLoosers = 0;
 	declare NbOfFinalistLoosers = 0;
 	declare NewLooser = False;
-	declare LooserName = "";
+	declare Text[] LooserNames;
 	
 	Race::SortScores(Race::C_Sort_TotalPoints);
 
@@ -509,17 +509,18 @@ Void ComputeScores() {
 			NbOfFinalistLoosers += 1;
 		}
 		// New looser
-		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && !NewLooser) {
+		// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && !NewLooser) {
+		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints) {
 			Scores::SetPlayerMatchPoints(Score, -2000);
 			NbOfLoosers += 1;
 			NewLooser = True;
-			LooserName = Score.User.Name;
+			LooserNames.add(Score.User.Name);
 		}
 		// Already finalist but already a looser, no points loose
-		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && NewLooser) {
-			Scores::SetPlayerMatchPoints(Score, -1000);
-			NbOfFinalistLoosers += 1;
-		}
+		// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && NewLooser) {
+		// 	Scores::SetPlayerMatchPoints(Score, -1000);
+		// 	NbOfFinalistLoosers += 1;
+		// }
 		// Already finalist and not last
 		else if (Scores::GetPlayerMatchPoints(Score) == -1000 && Scores::GetPlayerRoundPoints(Score) != MaxRoundPoints) {
 			Scores::SetPlayerMatchPoints(Score, -1000);
@@ -534,8 +535,12 @@ Void ComputeScores() {
 		Scores::AddPlayerMapPoints(Score, Scores::GetPlayerRoundPoints(Score));
 		Scores::SetPlayerRoundPoints(Score, 0);
 	}
-
-	if(NewLooser == True) AnnounceLooser(LooserName, NbOfLoosers);
+	
+	if(NewLooser == True) {
+		foreach (LooserName in LooserNames) {
+			AnnounceLooser(LooserName, NbOfLoosers);
+		}
+	}
 	
 	if (RoundIsValid) G_NbOfValidRounds += 1;
 }
