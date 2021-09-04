@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-03_b"
+#Const	Version							"2021-09-04"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -489,7 +489,7 @@ Void ComputeScores() {
 
 	declare MaxRoundPoints = 0;
 	foreach (Score in Scores) {
-		if (MaxRoundPoints > Scores::GetPlayerRoundPoints(Score)) MaxRoundPoints =  Scores::GetPlayerRoundPoints(Score);
+		if (MaxRoundPoints > Scores::GetPlayerRoundPoints(Score) && Scores::GetPlayerMatchPoints(Score) > -2000) MaxRoundPoints =  Scores::GetPlayerRoundPoints(Score);
 	}
 	
 	foreach (Score in Scores) {
