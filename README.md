@@ -1,7 +1,7 @@
 # Trackmania 2020 : Last Man Standing Cup
 Last man standing gamemode for Trackmania 2020. Original idea by https://twitter.com/LuckersTurbo
 
-The Last Man Standing cup mode consists of a series of races on multiple maps. When you finish a race in a bad position, you loose points substracted from your total. Servers might propose warmup races to get familiar with a map first. To win, you must be the last player with points. Once you are a finalist, if you finish a race last you will be eliminated. The cup mode ends once there is one player left.
+The Last Man Standing cup mode consists of a series of races on multiple maps. When you finish a race in a bad position, you lose points substracted from your total. Servers might propose warmup races to get familiar with a map first. To win, you must be the last player with points. Once you are a finalist, if you finish a race last you will be eliminated. The cup mode ends once there is one player left.
 
 Settings are same than a cup mode, exept the _S_PointsLimit_ that became _S_PointsStartup_ :
 
@@ -51,7 +51,7 @@ Download the LastManStandingCup.Script.txt file and put it on the dedicated serv
 		<setting name="S_WarmUpDuration" type="integer" value="20"/>
 		<setting name="S_WarmUpTimeout" type="integer" value="-1"/>
 		<setting name="S_PointsRepartition" type="text" value="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"/>
-		<setting name="S_DNF_LoosePoints" type="integer" value="20"/>
+		<setting name="S_DNF_LossPoints" type="integer" value="20"/>
 	</mode_script_settings>
 
 	<startindex>0</startindex>
