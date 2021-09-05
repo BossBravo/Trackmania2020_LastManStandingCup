@@ -24,7 +24,7 @@ _S_WarmUpTimeout_ -1 => "Warm up timeout"
 
 _S_PointsRepartition_ "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 
-_S_DNF_LoosePoints_ 20 => "Number of points for player that give up a round"
+_S_DNF_LossPoints_ 20 => "Number of points for player that give up a round"
 
 
 
