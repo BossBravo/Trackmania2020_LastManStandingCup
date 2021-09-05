@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-05"
+#Const	Version							"2021-09-05_a"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -312,12 +312,14 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	+++Cup_EndRound_AfterScoresUpdate+++
 	// Display Finalist & Looser UI
 	declare Text[][Text] CustomPoints;
-	foreach(Score in Scores) {
-		if (Scores::GetPlayerMatchPoints(Score) == -1000) {
-			CustomPoints[Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
-		}
-		else if (Scores::GetPlayerMatchPoints(Score) <= -2000) {
-			CustomPoints[Score.User.WebServicesUserId] = [C_Looser_Text, C_Color_Finalist];
+	foreach (Player in Players) {
+		if(!Spectators.exists(Player)) {
+			if (Scores::GetPlayerMatchPoints(Player.Score) == -1000) {
+				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
+			}
+			else if (Scores::GetPlayerMatchPoints(Player.Score) <= -2000) {
+				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Looser_Text, C_Color_Finalist];
+			}
 		}
 	}
 	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
@@ -461,24 +463,28 @@ Void ComputeLatestRaceScores() {
 	// Points distributed between all players
 	declare I = 0;
 	declare J = 0;
-	foreach (Score in Scores) {
-		if (Scores::GetPlayerPrevRaceTime(Score) > 0) {
-			declare Points = 0;
-			declare PointsRepartition = PointsRepartition::GetPointsRepartition();
-			if (PointsRepartition.count > 0) {
-				if (PointsRepartition.existskey(I)) {
-					Points = 0 - PointsRepartition[I];
-				} else {
-					Points = 0 - PointsRepartition[PointsRepartition.count - 1];
-				}
-			}
-			
-			Scores::SetPlayerRoundPoints(Score, Points);
-			I += 1;
+	foreach (Player in AllPlayers) {
+		if(Spectators.exists(Player) && Scores::GetPlayerMatchPoints(Player.Score) == 0) {
+			Scores::SetPlayerRoundPoints(Player.Score, 0);
 		} else {
-			Scores::SetPlayerRoundPoints(Score, 0 - S_DNF_LoosePoints);
+			if (Scores::GetPlayerPrevRaceTime(Player.Score) > 0) {
+				declare Points = 0;
+				declare PointsRepartition = PointsRepartition::GetPointsRepartition();
+				if (PointsRepartition.count > 0) {
+					if (PointsRepartition.existskey(I)) {
+						Points = 0 - PointsRepartition[I];
+					} else {
+						Points = 0 - PointsRepartition[PointsRepartition.count - 1];
+					}
+				}
+				
+				Scores::SetPlayerRoundPoints(Player.Score, Points);
+				I += 1;
+			} else {
+				Scores::SetPlayerRoundPoints(Player.Score, 0 - S_DNF_LoosePoints);
+			}
+			J += 1;
 		}
-		J += 1;
 	}
 }
 
@@ -494,53 +500,57 @@ Void ComputeScores() {
 	Race::SortScores(Race::C_Sort_TotalPoints);
 
 	declare MaxRoundPoints = 0;
-	foreach (Score in Scores) {
-		if (MaxRoundPoints > Scores::GetPlayerRoundPoints(Score) && Scores::GetPlayerMatchPoints(Score) > -2000) MaxRoundPoints =  Scores::GetPlayerRoundPoints(Score);
+	foreach (Player in Players) {
+		if(!Spectators.exists(Player)) {
+			if (MaxRoundPoints > Scores::GetPlayerRoundPoints(Player.Score) && Scores::GetPlayerMatchPoints(Player.Score) > -2000) MaxRoundPoints =  Scores::GetPlayerRoundPoints(Player.Score);
+		}
 	}
 	
-	foreach (Score in Scores) {
-		if (Scores::GetPlayerRoundPoints(Score) < 0) RoundIsValid = True;
-		
-		declare Integer NewMatchPoints = Scores::GetPlayerMatchPoints(Score) + Scores::GetPlayerRoundPoints(Score);
+	foreach (Player in Players) {
+		if(!Spectators.exists(Player)) {
+			if (Scores::GetPlayerRoundPoints(Player.Score) < 0) RoundIsValid = True;
+			
+			declare Integer NewMatchPoints = Scores::GetPlayerMatchPoints(Player.Score) + Scores::GetPlayerRoundPoints(Player.Score);
 
-		// Already loose
-		if (NewMatchPoints == -2000) {
-			Scores::SetPlayerMatchPoints(Score, -2000);
-			NbOfLoosers += 1;
+			// Already loose
+			if (NewMatchPoints == -2000) {
+				Scores::SetPlayerMatchPoints(Player.Score, -2000);
+				NbOfLoosers += 1;
+			}
+			// New Finalist looser
+			else if (NewMatchPoints > -1000 && NewMatchPoints <= 0) {
+				Scores::SetPlayerMatchPoints(Player.Score, -1000);
+				NbOfFinalistLoosers += 1;
+			}
+			// New looser
+			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && !NewLooser) {
+			else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints) {
+				Scores::SetPlayerMatchPoints(Player.Score, -2000);
+				NbOfLoosers += 1;
+				NewLooser = True;
+				LooserNames.add(Player.User.Name);
+			}
+			// Already finalist but already a looser, no points loose
+			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && NewLooser) {
+			// 	Scores::SetPlayerMatchPoints(Player.Score, -1000);
+			// 	NbOfFinalistLoosers += 1;
+			// }
+			// Already finalist and not last
+			else if (Scores::GetPlayerMatchPoints(Player.Score) == -1000 && Scores::GetPlayerRoundPoints(Player.Score) != MaxRoundPoints) {
+				Scores::SetPlayerMatchPoints(Player.Score, -1000);
+				NbOfFinalistLoosers += 1;
+			}
+			// Standard round finish
+			else {
+				Scores::AddPlayerMatchPoints(Player.Score, Scores::GetPlayerRoundPoints(Player.Score));
+				if (NewMatchPoints < -2000) Scores::SetPlayerMatchPoints(Player.Score, -2000);
+			}
+			
+			Scores::AddPlayerMapPoints(Player.Score, Scores::GetPlayerRoundPoints(Player.Score));
+			Scores::SetPlayerRoundPoints(Player.Score, 0);
 		}
-		// New Finalist looser
-		else if (NewMatchPoints > -1000 && NewMatchPoints <= 0) {
-			Scores::SetPlayerMatchPoints(Score, -1000);
-			NbOfFinalistLoosers += 1;
-		}
-		// New looser
-		// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && !NewLooser) {
-		else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints) {
-			Scores::SetPlayerMatchPoints(Score, -2000);
-			NbOfLoosers += 1;
-			NewLooser = True;
-			LooserNames.add(Score.User.Name);
-		}
-		// Already finalist but already a looser, no points loose
-		// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Score) == MaxRoundPoints && NewLooser) {
-		// 	Scores::SetPlayerMatchPoints(Score, -1000);
-		// 	NbOfFinalistLoosers += 1;
-		// }
-		// Already finalist and not last
-		else if (Scores::GetPlayerMatchPoints(Score) == -1000 && Scores::GetPlayerRoundPoints(Score) != MaxRoundPoints) {
-			Scores::SetPlayerMatchPoints(Score, -1000);
-			NbOfFinalistLoosers += 1;
-		}
-		// Standard round finish
-		else {
-			Scores::AddPlayerMatchPoints(Score, Scores::GetPlayerRoundPoints(Score));
-			if (NewMatchPoints < -2000) Scores::SetPlayerMatchPoints(Score, -2000);
-		}
-		
-		Scores::AddPlayerMapPoints(Score, Scores::GetPlayerRoundPoints(Score));
-		Scores::SetPlayerRoundPoints(Score, 0);
 	}
-	
+
 	if(NewLooser == True) {
 		foreach (LooserName in LooserNames) {
 			AnnounceLooser(LooserName, NbOfLoosers);
@@ -557,8 +567,10 @@ Void ComputeScores() {
  */
 Integer GetBestScore() {
 	declare Max = 0;
-	foreach (Score in Scores) {
-		if (Scores::GetPlayerMatchPoints(Score) > Max) Max = Scores::GetPlayerMatchPoints(Score);
+	foreach (Player in Players) {
+		if(!Spectators.exists(Player)) {
+			if (Scores::GetPlayerMatchPoints(Player.Score) > Max) Max = Scores::GetPlayerMatchPoints(Player.Score);
+		}
 	}
 	return Max;
 }
@@ -582,8 +594,10 @@ Boolean MapIsOver() {
 Boolean MatchIsOver() {
 	Log::Log("[Cup] MatchIsOver() check | S_PointsStartup : "^S_PointsStartup);
 	declare NbOfPlayersActive = 0;
-	foreach (Score in Scores) {
-		if (Scores::GetPlayerMatchPoints(Score) >= -1000) NbOfPlayersActive += 1;
+	foreach (Player in Players) {
+		if(!Spectators.exists(Player)) {
+			if (Scores::GetPlayerMatchPoints(Player.Score) >= -1000) NbOfPlayersActive += 1;
+		}
 	}
 	
 	// If there's only one player they need to reach the points limit to win
@@ -602,7 +616,11 @@ Boolean MatchIsOver() {
  */
 Void ResetMatch() {
 	Log::Log("[Cup] ResetMatch() check | S_PointsStartup : "^S_PointsStartup);
-	foreach (Score in Scores) {
-		Scores::SetPlayerMatchPoints(Score, S_PointsStartup);
+	foreach (Player in Players) {
+		if(Spectators.exists(Player)) {
+			Scores::SetPlayerMatchPoints(Player.Score, 0);
+		} else {
+			Scores::SetPlayerMatchPoints(Player.Score, S_PointsStartup);
+		}
 	}
 }
