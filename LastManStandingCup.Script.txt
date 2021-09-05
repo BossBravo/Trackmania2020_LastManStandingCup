@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-04_b"
+#Const	Version							"2021-09-05"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -58,13 +58,14 @@
 //L16N [CupModeOnline] Player has reached the finalist status
 #Const C_Finalist_Text _("|Status|Finalist")
 //L16N [CupModeOnline] Player won the match
-#Const C_Looser_Text _("|Status|Looser")
+#Const C_Looser_Text _("|Status|Eliminated")
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Globales
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 declare Integer G_NbOfValidRounds;
 declare Integer G_NbOfPlayersTotal;
+declare Boolean G_InitDone;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Extends
@@ -207,6 +208,10 @@ foreach (Score in Scores) {
 
 ***Match_StartRound***
 ***
+if(G_InitDone == False) {
+	G_InitDone = True;
+	ResetMatch();
+}
 UpdateScoresTableFooter(S_PointsStartup);
 StateMgr::ForcePlayersStates([CupCommon_Const::C_State_Playing]);
 ***
