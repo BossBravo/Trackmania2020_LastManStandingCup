@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-05_b"
+#Const	Version							"2021-09-05_c"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -53,12 +53,12 @@
 #Const C_ScoreTable_Height 55.
 
 #Const C_Color_Finalist "FF0000"
-#Const C_Color_Looser "48DA36"
+#Const C_Color_Eliminated "48DA36"
 
 //L16N [CupModeOnline] Player has reached the finalist status
 #Const C_Finalist_Text _("|Status|Finalist")
 //L16N [CupModeOnline] Player won the match
-#Const C_Looser_Text _("|Status|Eliminated")
+#Const C_Eliminated_Text _("|Status|Eliminated")
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Globales
@@ -310,7 +310,7 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	ComputeScores();
 	Race::SortScores(Race::C_Sort_TotalPoints);
 	+++Cup_EndRound_AfterScoresUpdate+++
-	// Display Finalist & Looser UI
+	// Display Finalist & Eliminated UI
 	declare Text[][Text] CustomPoints;
 	foreach (Player in Players) {
 		if(!Spectators.exists(Player)) {
@@ -318,7 +318,7 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
 			}
 			else if (Scores::GetPlayerMatchPoints(Player.Score) <= -2000) {
-				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Looser_Text, C_Color_Finalist];
+				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Eliminated_Text, C_Color_Finalist];
 			}
 		}
 	}
@@ -355,9 +355,9 @@ UIModules_ScoresTable::DisplayRoundPoints(False);
 Race::SortScores(Race::C_Sort_TotalPoints);
 
 if (!MB_MatchIsRunning()) {
-	declare Looser <=> Scores::GetBestPlayer(Scores::C_Sort_MatchPoints);
-	if (MM_IsMatchServer() && Looser != Null) MM_SetMasterLogin(Looser.User.Login);
-	Scores::SetPlayerWinner(Looser);
+	declare Eliminated <=> Scores::GetBestPlayer(Scores::C_Sort_MatchPoints);
+	if (MM_IsMatchServer() && Eliminated != Null) MM_SetMasterLogin(Eliminated.User.Login);
+	Scores::SetPlayerWinner(Eliminated);
 } else {
 	MB_SkipPodiumSequence();
 }
@@ -440,14 +440,14 @@ Integer GetFinishTimeout() {
  *	@param	_Name			The name of the new looser
  *	@param	_Rank			The rank of the new looser
  */
-Void AnnounceLooser(Text _Name, Integer _Rank) {
+Void AnnounceEliminated(Text _Name, Integer _Rank) {
 	declare Message = "";
 	declare NewRank = G_NbOfPlayersTotal - _Rank + 1;
 	switch (NewRank) {
-		case 1: Message = TL::Compose("$<%1$> takes 1st place!", _Name);
-		case 2: Message = TL::Compose("$<%1$> takes 2nd place!", _Name);
-		case 3: Message = TL::Compose("$<%1$> takes 3rd place!", _Name);
-		default: Message = TL::Compose("$<%1$> takes %2th place!", _Name, TL::ToText(NewRank));
+		case 1: Message = TL::Compose("$f90$i $<%1$> takes 1st place!", _Name);
+		case 2: Message = TL::Compose("$f90$i $<%1$> takes 2nd place!", _Name);
+		case 3: Message = TL::Compose("$f90$i $<%1$> takes 3rd place!", _Name);
+		default: Message = TL::Compose("$f90$i $<%1$> takes %2th place!", _Name, TL::ToText(NewRank));
 	}
 	
 	UIManager.UIAll.SendChat(Message);
@@ -492,10 +492,10 @@ Void ComputeLatestRaceScores() {
 /// Compute the map scores
 Void ComputeScores() {
 	declare RoundIsValid = False;
-	declare NbOfLoosers = 0;
-	declare NbOfFinalistLoosers = 0;
-	declare NewLooser = False;
-	declare Text[] LooserNames;
+	declare NbOfEliminated = 0;
+	declare NbOfFinalistEliminated = 0;
+	declare NewEliminated = False;
+	declare Text[] EliminatedNames;
 	
 	Race::SortScores(Race::C_Sort_TotalPoints);
 
@@ -515,30 +515,30 @@ Void ComputeScores() {
 			// Already loose
 			if (NewMatchPoints == -2000) {
 				Scores::SetPlayerMatchPoints(Player.Score, -2000);
-				NbOfLoosers += 1;
+				NbOfEliminated += 1;
 			}
 			// New Finalist looser
 			else if (NewMatchPoints > -1000 && NewMatchPoints <= 0) {
 				Scores::SetPlayerMatchPoints(Player.Score, -1000);
-				NbOfFinalistLoosers += 1;
+				NbOfFinalistEliminated += 1;
 			}
 			// New looser
-			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && !NewLooser) {
+			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && !NewEliminated) {
 			else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints) {
 				Scores::SetPlayerMatchPoints(Player.Score, -2000);
-				NbOfLoosers += 1;
-				NewLooser = True;
-				LooserNames.add(Player.User.Name);
+				NbOfEliminated += 1;
+				NewEliminated = True;
+				EliminatedNames.add(Player.User.Name);
 			}
 			// Already finalist but already a looser, no points loose
-			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && NewLooser) {
+			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && NewEliminated) {
 			// 	Scores::SetPlayerMatchPoints(Player.Score, -1000);
-			// 	NbOfFinalistLoosers += 1;
+			// 	NbOfFinalistEliminated += 1;
 			// }
 			// Already finalist and not last
 			else if (Scores::GetPlayerMatchPoints(Player.Score) == -1000 && Scores::GetPlayerRoundPoints(Player.Score) != MaxRoundPoints) {
 				Scores::SetPlayerMatchPoints(Player.Score, -1000);
-				NbOfFinalistLoosers += 1;
+				NbOfFinalistEliminated += 1;
 			}
 			// Standard round finish
 			else {
@@ -551,9 +551,9 @@ Void ComputeScores() {
 		}
 	}
 
-	if(NewLooser == True) {
-		foreach (LooserName in LooserNames) {
-			AnnounceLooser(LooserName, NbOfLoosers);
+	if(NewEliminated == True) {
+		foreach (EliminatedName in EliminatedNames) {
+			AnnounceEliminated(EliminatedName, NbOfEliminated);
 		}
 	}
 	
@@ -602,7 +602,7 @@ Boolean MatchIsOver() {
 	
 	// If there's only one player they need to reach the points limit to win
 	// If there's more than one player then all players except one must reach the points limit
-	declare PlayerLoosersLimit = ML::Max(Players.count - 1, 1);
+	declare PlayerEliminatedLimit = ML::Max(Players.count - 1, 1);
 	Log::Log("""[Cup] Match is over ? {{{(S_NbOfWinners >= NbOfPlayersActive)}}} | ({{{S_NbOfWinners}}} >= {{{NbOfPlayersActive}}})""");
 	if (S_NbOfWinners >= NbOfPlayersActive) return True;
 	
