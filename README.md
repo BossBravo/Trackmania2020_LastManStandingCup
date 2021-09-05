@@ -1,5 +1,5 @@
 # Trackmania 2020 : Last Man Standing Cup
-Last man standing gamemode for Trackmania 2020
+Last man standing gamemode for Trackmania 2020. Original idea by https://twitter.com/LuckersTurbo
 
 The cup mode consists of a series of races on multiple maps.When you finish a race in a bad position, you loose points substracted from your total.Servers might propose warmup races to get familiar with a map first. To win, you must be the last player with points. Once you are a finalist, if you finish a race last you will be eliminated. The cup mode ends once there is one player left.
 
