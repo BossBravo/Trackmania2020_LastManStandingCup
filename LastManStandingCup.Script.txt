@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-05_a"
+#Const	Version							"2021-09-05_b"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -168,7 +168,6 @@ Server_PointsLimit = S_PointsStartup;
 ***
 UIModules_ScoresTable::SetCustomPoints([]);
 ResetMatch();
-G_NbOfPlayersTotal = Players.count;
 ***
 
 ***Match_InitMap***
@@ -210,6 +209,7 @@ foreach (Score in Scores) {
 ***
 if(G_InitDone == False) {
 	G_InitDone = True;
+	G_NbOfPlayersTotal = Players.count;
 	ResetMatch();
 }
 UpdateScoresTableFooter(S_PointsStartup);
