@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-10-09_a"
+#Const	Version							"2021-10-09_b"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -54,18 +54,19 @@
 #Const C_ScoreTable_Height 55.
 
 #Const C_Color_Finalist "FF0000"
-#Const C_Color_Eliminated "48DA36"
+#Const C_Color_Eliminated "FF0000"
+#Const C_Color_Spectator "48DA36"
 
-//L16N [CupModeOnline] Player has reached the finalist status
 #Const C_Finalist_Text _("|Status|Finalist")
-//L16N [CupModeOnline] Player won the match
 #Const C_Eliminated_Text _("|Status|Eliminated")
+#Const C_Spectator_Text _("|Status|Spectator")
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Globales
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 declare Integer G_NbOfValidRounds;
 declare Integer G_NbOfPlayersTotal;
+declare Text[] G_PlayersParticipants;
 declare Boolean G_InitDone;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -313,14 +314,16 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	+++Cup_EndRound_AfterScoresUpdate+++
 	// Display Finalist & Eliminated UI
 	declare Text[][Text] CustomPoints;
-	foreach (Player in Players) {
+	foreach (Player in AllPlayers) {
 		if(!Spectators.exists(Player)) {
 			if (Scores::GetPlayerMatchPoints(Player.Score) == -1000) {
 				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
 			}
 			else if (Scores::GetPlayerMatchPoints(Player.Score) <= -2000) {
-				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Eliminated_Text, C_Color_Finalist];
+				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Eliminated_Text, C_Color_Eliminated];
 			}
+		} else {
+			CustomPoints[Player.Score.User.WebServicesUserId] = [C_Spectator_Text, C_Color_Spectator];
 		}
 	}
 	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
@@ -465,9 +468,7 @@ Void ComputeLatestRaceScores() {
 	declare I = 0;
 	declare J = 0;
 	foreach (Player in AllPlayers) {
-		if(Spectators.exists(Player) && Scores::GetPlayerMatchPoints(Player.Score) == 0) {
-			Scores::SetPlayerRoundPoints(Player.Score, 0);
-		} else {
+		if(!Spectators.exists(Player)) {
 			if (Scores::GetPlayerPrevRaceTime(Player.Score) > 0) {
 				declare Points = 0;
 				declare PointsRepartition = PointsRepartition::GetPointsRepartition();
@@ -624,11 +625,16 @@ Boolean MatchIsOver() {
  */
 Void ResetMatch() {
 	Log::Log("[Cup] ResetMatch() check | S_PointsStartup : "^S_PointsStartup);
-	foreach (Player in Players) {
+	G_PlayersParticipants.clear();
+	declare Text[][Text] CustomPoints;
+	foreach (Player in AllPlayers) {
 		if(Spectators.exists(Player)) {
-			Scores::SetPlayerMatchPoints(Player.Score, 0);
+			Scores::SetPlayerMatchPoints(Player.Score, -10000);
+			CustomPoints[Player.Score.User.WebServicesUserId] = [C_Spectator_Text, C_Color_Spectator];
 		} else {
 			Scores::SetPlayerMatchPoints(Player.Score, S_PointsStartup);
+			G_PlayersParticipants.add(Player.User.Login);
 		}
 	}
+	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
 }
