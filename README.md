@@ -30,6 +30,8 @@ _S_PointsRepartition_ "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 
 _S_DNF_LossPoints_ 20 => "Number of points for player that give up a round"
 
+_S_Finalist_DNF_Mode_ 0 => "0 = Every finalist who DNF will be eliminated | 1 = Only finalists who passed the less checkpoints and DNF will be eliminated, others will stay alive."
+
 
 
 # How to Use
@@ -58,6 +60,7 @@ Download the LastManStandingCup.Script.txt file and put it on the dedicated serv
 		<setting name="S_AllowFastForwardRounds" type="boolean" value="1"/>
 		<setting name="S_PointsRepartition" type="text" value="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"/>
 		<setting name="S_DNF_LossPoints" type="integer" value="20"/>
+		<setting name="S_Finalist_DNF_Mode" type="integer" value="0"/>
 	</mode_script_settings>
 
 	<startindex>0</startindex>
