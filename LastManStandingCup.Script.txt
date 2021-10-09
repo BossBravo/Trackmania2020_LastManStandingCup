@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-10-09_d"
+#Const	Version							"2021-10-09_e"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -33,6 +33,7 @@
 #Setting S_AllowFastForwardRounds True as _("If whatever the issue of the round, all players will be finalist, the round will be skipped to the next without playing it (all players will be in finalist).")
 #Setting S_PointsRepartition "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 #Setting S_DNF_LossPoints 20 as _("Number of points for player that give up a round")
+#Setting S_Finalist_DNF_Mode 0 as _("0 = Every finalist who DNF will be eliminated | 1 = Only finalists who passed the less checkpoints and DNF will be eliminated, others will stay alive.")
 // #Setting S_ScriptEnvironment "development"
 #Setting S_ScriptEnvironment "production"
 
@@ -476,6 +477,8 @@ Void ComputeLatestRaceScores() {
 	// Points distributed between all players
 	declare I = 0;
 	declare J = 0;
+	declare CSmPlayer[] FinalistPlayersDNF_WithWorstCheckpoints;
+	declare Integer MinCheckpointNbPassed = 9999;
 	foreach (Player in AllPlayers) {
 		if(!Spectators.exists(Player)) {
 			if (Scores::GetPlayerPrevRaceTime(Player.Score) > 0) {
@@ -492,9 +495,28 @@ Void ComputeLatestRaceScores() {
 				Scores::SetPlayerRoundPoints(Player.Score, Points);
 				I += 1;
 			} else {
-				Scores::SetPlayerRoundPoints(Player.Score, 0 - S_DNF_LossPoints);
+				if(S_Finalist_DNF_Mode == 1) {
+					if(Scores::GetPlayerMatchPoints(Player.Score) == -1000) {
+						if(Player.LapWaypointTimes.count < MinCheckpointNbPassed) {
+							MinCheckpointNbPassed = Player.LapWaypointTimes.count;
+							FinalistPlayersDNF_WithWorstCheckpoints.clear();
+							FinalistPlayersDNF_WithWorstCheckpoints.add(Player);
+						} else if(Player.LapWaypointTimes.count == MinCheckpointNbPassed) {
+							FinalistPlayersDNF_WithWorstCheckpoints.add(Player);
+						}
+					} else {
+						Scores::SetPlayerRoundPoints(Player.Score, 0 - S_DNF_LossPoints);
+					}
+				} else {
+					Scores::SetPlayerRoundPoints(Player.Score, 0 - S_DNF_LossPoints);
+				}
 			}
 			J += 1;
+		}
+	}
+	if(S_Finalist_DNF_Mode == 1) {
+		foreach(Player in FinalistPlayersDNF_WithWorstCheckpoints) {
+			Scores::SetPlayerRoundPoints(Player.Score, 0 - S_DNF_LossPoints);
 		}
 	}
 }
@@ -541,18 +563,12 @@ Void ComputeScores() {
 				}
 			}
 			// New looser
-			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && !NewEliminated) {
-			else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints) {
+			else if (NewMatchPoints > -2000 && NewMatchPoints < -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints) {
 				Scores::SetPlayerMatchPoints(Player.Score, -2000);
 				NbOfEliminated += 1;
 				NewEliminated = True;
 				EliminatedNames.add(Player.User.Name);
 			}
-			// Already finalist but already a looser, no points loose
-			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && NewEliminated) {
-			// 	Scores::SetPlayerMatchPoints(Player.Score, -1000);
-			// 	NbOfFinalistEliminated += 1;
-			// }
 			// Already finalist and not last
 			else if (Scores::GetPlayerMatchPoints(Player.Score) == -1000 && Scores::GetPlayerRoundPoints(Player.Score) != MaxRoundPoints) {
 				Scores::SetPlayerMatchPoints(Player.Score, -1000);
