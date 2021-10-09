@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-10-09_c"
+#Const	Version							"2021-10-09_d"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -326,8 +326,27 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 
 	// Match is over, we have all the loosers
 	if (MatchIsOver()) {
+		declare Text[] WinnersNames;
+		foreach (Player in Players) {
+			if(!Spectators.exists(Player)) {
+				if (Scores::GetPlayerMatchPoints(Player.Score) >= -1000) WinnersNames.add("["^Player.User.ClubTag^"$z$fff] "^Player.User.Name);
+			}
+		}
+		UIManager.UIAll.BigMessageSound = CUIConfig::EUISound::EndMatch;
+		UIManager.UIAll.BigMessageSoundVariant = 0;
+		if(WinnersNames.count > 1) {
+			UIManager.UIAll.BigMessage = "$0c0Winners : $fff" ^ TL::Join("$z, ", WinnersNames);
+		} else {
+			UIManager.UIAll.BigMessage = "$0c0Winner : $fff" ^ TL::Join("$z, ", WinnersNames);
+		}
+		MB_Sleep(7000);
+		UIManager.UIAll.BigMessage = "";
+		UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::ForcedVisible;
+		UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
 		MB_StopMatch();
 		MB_Sleep(30000);
+		UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::Normal;
+		UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
 		ResetMatch();
 	}
 	// Map is over, we played all the rounds
