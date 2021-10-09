@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-09-05_d"
+#Const	Version							"2021-10-09_a"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -29,6 +29,7 @@
 #Setting S_WarmUpNb 0	as _("Number of warm up")
 #Setting S_WarmUpDuration 20 as _("Duration of one warm up")
 #Setting S_WarmUpTimeout -1 as _("Warm up timeout")
+#Setting S_DisableFinalist False as _("When a player reach 0 points he is automatically eliminated")
 #Setting S_PointsRepartition "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 #Setting S_DNF_LossPoints 20 as _("Number of points for player that give up a round")
 // #Setting S_ScriptEnvironment "development"
@@ -519,8 +520,15 @@ Void ComputeScores() {
 			}
 			// New Finalist looser
 			else if (NewMatchPoints > -1000 && NewMatchPoints <= 0) {
-				Scores::SetPlayerMatchPoints(Player.Score, -1000);
-				NbOfFinalistEliminated += 1;
+				if(S_DisableFinalist == False) {
+					Scores::SetPlayerMatchPoints(Player.Score, -1000);
+					NbOfFinalistEliminated += 1;
+				} else {
+					Scores::SetPlayerMatchPoints(Player.Score, -2000);
+					NbOfEliminated += 1;
+					NewEliminated = True;
+					EliminatedNames.add(Player.User.Name);
+				}
 			}
 			// New looser
 			// else if (NewMatchPoints > -2000 && NewMatchPoints <= -1000 && Scores::GetPlayerRoundPoints(Player.Score) == MaxRoundPoints && !NewEliminated) {
