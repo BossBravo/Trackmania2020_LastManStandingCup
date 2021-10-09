@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-10-09_b"
+#Const	Version							"2021-10-09_c"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -30,6 +30,7 @@
 #Setting S_WarmUpDuration 20 as _("Duration of one warm up")
 #Setting S_WarmUpTimeout -1 as _("Warm up timeout")
 #Setting S_DisableFinalist False as _("When a player reach 0 points he is automatically eliminated")
+#Setting S_AllowFastForwardRounds True as _("If whatever the issue of the round, all players will be finalist, the round will be skipped to the next without playing it (all players will be in finalist).")
 #Setting S_PointsRepartition "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 #Setting S_DNF_LossPoints 20 as _("Number of points for player that give up a round")
 // #Setting S_ScriptEnvironment "development"
@@ -216,6 +217,7 @@ if(G_InitDone == False) {
 }
 UpdateScoresTableFooter(S_PointsStartup);
 StateMgr::ForcePlayersStates([CupCommon_Const::C_State_Playing]);
+CheckRoundBeforePlay();
 ***
 
 ***Match_StartPlayLoop***
@@ -300,6 +302,8 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	if (!Round_SkipPauseRound) {
 		ForcedEndRoundSequence();
 	}
+	DisplayCustomPoints();
+	MB_Sleep(3000);
 } else {
 	// Get the last round points
 	ComputeLatestRaceScores();
@@ -312,21 +316,7 @@ if (Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped) {
 	ComputeScores();
 	Race::SortScores(Race::C_Sort_TotalPoints);
 	+++Cup_EndRound_AfterScoresUpdate+++
-	// Display Finalist & Eliminated UI
-	declare Text[][Text] CustomPoints;
-	foreach (Player in AllPlayers) {
-		if(!Spectators.exists(Player)) {
-			if (Scores::GetPlayerMatchPoints(Player.Score) == -1000) {
-				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
-			}
-			else if (Scores::GetPlayerMatchPoints(Player.Score) <= -2000) {
-				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Eliminated_Text, C_Color_Eliminated];
-			}
-		} else {
-			CustomPoints[Player.Score.User.WebServicesUserId] = [C_Spectator_Text, C_Color_Spectator];
-		}
-	}
-	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
+	DisplayCustomPoints();
 	MB_Sleep(3000);
 	+++Cup_EndRound_BeforeScoresTableEnd+++
 	UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::Normal;
@@ -637,4 +627,67 @@ Void ResetMatch() {
 		}
 	}
 	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/** Check round before playing it, if necessary to fast forward it
+ *
+ */
+Void DisplayCustomPoints() {
+	// Display Spectator, Finalist & Eliminated UI
+	declare Text[][Text] CustomPoints;
+	foreach (Player in AllPlayers) {
+		if(!Spectators.exists(Player)) {
+			if (Scores::GetPlayerMatchPoints(Player.Score) == -1000) {
+				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Finalist_Text, C_Color_Finalist];
+			}
+			else if (Scores::GetPlayerMatchPoints(Player.Score) <= -2000) {
+				CustomPoints[Player.Score.User.WebServicesUserId] = [C_Eliminated_Text, C_Color_Eliminated];
+			}
+		} else {
+			CustomPoints[Player.Score.User.WebServicesUserId] = [C_Spectator_Text, C_Color_Spectator];
+		}
+	}
+	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
+}
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/** Check round before playing it, if necessary to fast forward it
+ *
+ */
+Void CheckRoundBeforePlay() {
+	if(S_AllowFastForwardRounds == True) {
+		declare Integer[] PointsRepartitionTable = PointsRepartition::GetPointsRepartition();
+		declare Boolean IsRoundFastForwardCompatible = True;
+		declare Boolean AtLeastOnePlayerHasPositivePoints = False;
+		foreach (Player in Players) {
+			declare PlayerMatchPoints = Scores::GetPlayerMatchPoints(Player.Score);
+			if (PlayerMatchPoints >= 0) {
+				AtLeastOnePlayerHasPositivePoints = True;
+				if(PlayerMatchPoints > PointsRepartitionTable[0]) {
+					IsRoundFastForwardCompatible = False;
+					break;
+				}
+			}
+		}
+		if(AtLeastOnePlayerHasPositivePoints == False) IsRoundFastForwardCompatible = False;
+		Log::Log("[Cup] CheckRoundBeforePlay() check | AtLeastOnePlayerHasPositivePoints : "^AtLeastOnePlayerHasPositivePoints^" | IsRoundFastForwardCompatible : "^IsRoundFastForwardCompatible);
+		if(IsRoundFastForwardCompatible == True) {
+			foreach (Player in Players) {
+				declare PlayerMatchPoints = Scores::GetPlayerMatchPoints(Player.Score);
+				if (PlayerMatchPoints > -2000) {
+					Scores::SetPlayerMatchPoints(Player.Score, -1000);
+				}
+			}
+			UIManager.UIAll.BigMessageSound = CUIConfig::EUISound::EndRound;
+			UIManager.UIAll.BigMessageSoundVariant = 0;
+			UIManager.UIAll.BigMessage = "$c00This round is fast-forwarded. Every remaining players are now Finalists.";
+			DisplayCustomPoints();
+			MB_Sleep(5000);
+			UIManager.UIAll.BigMessage = "";
+			MB_StopRound();
+		}
+	}
 }
