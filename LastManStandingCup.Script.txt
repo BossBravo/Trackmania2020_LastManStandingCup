@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2022-01-08_a"
+#Const	Version							"2022-01-08_b"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -465,7 +465,7 @@ Integer GetFinishTimeout() {
  */
 Void AnnounceEliminated(Text _Name, Integer _Rank) {
 	declare Message = "";
-	declare NewRank = G_NbOfPlayersTotal - _Rank + 1;
+	declare NewRank = Players.count - _Rank + 1;
 	switch (NewRank) {
 		case 1: Message = TL::Compose("$f90$i $<%1$> takes 1st place!", _Name);
 		case 2: Message = TL::Compose("$f90$i $<%1$> takes 2nd place!", _Name);
