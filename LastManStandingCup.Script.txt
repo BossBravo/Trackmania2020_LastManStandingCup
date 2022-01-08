@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2021-10-09_e"
+#Const	Version							"2022-01-08_a"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -207,6 +207,15 @@ foreach (Score in Scores) {
 	declare ModeRounds_CanSpawn for Score = True;
 	ModeRounds_CanSpawn = CanSpawn(Score);
 }
+***
+
+***Match_InitRound***
+***
+UIManager.UIAll.BigMessage = "$zRound " ^ TL::ToText(G_NbOfValidRounds + 1) ^ " / " ^ TL::ToText(S_RoundsPerMap);
+UIManager.UIAll.BigMessageSound = CUIConfig::EUISound::StartRound;
+UIManager.UIAll.BigMessageSoundVariant = 0;
+MB_Sleep(3000);
+UIManager.UIAll.BigMessage = "";
 ***
 
 ***Match_StartRound***
