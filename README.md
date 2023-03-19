@@ -28,6 +28,8 @@ _S_AllowFastForwardRounds_ True => "If whatever the issue of the round, all play
 
 _S_PointsRepartition_ "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
 
+_S_IncreasePointsLooseEachEliminated_ False => "Each time a player is eliminated, the points loss is increased. For example, if 3 players are eliminated, the first 3 points in S_PointsRepartition are not available anymore and the first will take the 4th place inside S_PointsRepartition."
+
 _S_DNF_LossPoints_ 20 => "Number of points for player that give up a round"
 
 _S_Finalist_DNF_Mode_ 0 => "0 = Every finalist who DNF will be eliminated | 1 = Only finalists who passed the less checkpoints and DNF will be eliminated, others will stay alive."
