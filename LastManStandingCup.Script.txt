@@ -1,7 +1,7 @@
 #Extends "Libs/Nadeo/TMNext/TrackMania/Modes/TMNextRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"2022-01-08_b"
+#Const	Version							"2023-03-19"
 #Const	Author							"[K3]boss-bravo"
 #Const	ScriptName					"Modes/TrackMania/LastManStandingCup.Script.txt"
 
@@ -32,6 +32,7 @@
 #Setting S_DisableFinalist False as _("When a player reach 0 points he is automatically eliminated")
 #Setting S_AllowFastForwardRounds True as _("If whatever the issue of the round, all players will be finalist, the round will be skipped to the next without playing it (all players will be in finalist).")
 #Setting S_PointsRepartition "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"
+#Setting S_IncreasePointsLooseEachEliminated False as _("Each time a player is eliminated, the points loss is increased. For example, if 3 players are eliminated, the first 3 points in S_PointsRepartition are not available anymore and the first will take the 4th place inside S_PointsRepartition.")
 #Setting S_DNF_LossPoints 20 as _("Number of points for player that give up a round")
 #Setting S_Finalist_DNF_Mode 0 as _("0 = Every finalist who DNF will be eliminated | 1 = Only finalists who passed the less checkpoints and DNF will be eliminated, others will stay alive.")
 // #Setting S_ScriptEnvironment "development"
@@ -68,6 +69,8 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 declare Integer G_NbOfValidRounds;
 declare Integer G_NbOfPlayersTotal;
+declare Integer G_NbOfPlayersEliminated;
+declare Text[] G_PlayersEliminated;
 declare Text[] G_PlayersParticipants;
 declare Boolean G_InitDone;
 
@@ -463,18 +466,22 @@ Integer GetFinishTimeout() {
  *	@param	_Name			The name of the new looser
  *	@param	_Rank			The rank of the new looser
  */
-Void AnnounceEliminated(Text _Name, Integer _Rank) {
+Void AnnounceEliminated(CUser _User, Integer _Rank) {
 	declare Message = "";
+	// declare NewRank = G_NbOfPlayersTotal - _Rank + 1;
 	declare NewRank = Players.count - _Rank + 1;
+	G_NbOfPlayersEliminated += 1;
+	G_PlayersEliminated.add(_User.Login);
 	switch (NewRank) {
-		case 1: Message = TL::Compose("$f90$i $<%1$> takes 1st place!", _Name);
-		case 2: Message = TL::Compose("$f90$i $<%1$> takes 2nd place!", _Name);
-		case 3: Message = TL::Compose("$f90$i $<%1$> takes 3rd place!", _Name);
-		default: Message = TL::Compose("$f90$i $<%1$> takes %2th place!", _Name, TL::ToText(NewRank));
+		case 1: Message = TL::Compose("$f90$i $<%1$> takes 1st place!", _User.Name);
+		case 2: Message = TL::Compose("$f90$i $<%1$> takes 2nd place!", _User.Name);
+		case 3: Message = TL::Compose("$f90$i $<%1$> takes 3rd place!", _User.Name);
+		default: Message = TL::Compose("$f90$i $<%1$> takes %2th place!", _User.Name, TL::ToText(NewRank));
 	}
 	
 	UIManager.UIAll.SendChat(Message);
 	UIModules_BigMessage::SetMessage(Message);
+	Log::Log("[Cup] AnnounceEliminated() | Login : "^_User.Login^" | Name : "^_User.Name^" | _Rank : "^_Rank^" | G_NbOfPlayersEliminated : "^G_NbOfPlayersEliminated^" | Players.count : "^Players.count^" | G_NbOfPlayersTotal : "^G_NbOfPlayersTotal^" | G_PlayersParticipants : "^G_PlayersParticipants.tojson());
 }
 
 
@@ -494,10 +501,18 @@ Void ComputeLatestRaceScores() {
 				declare Points = 0;
 				declare PointsRepartition = PointsRepartition::GetPointsRepartition();
 				if (PointsRepartition.count > 0) {
-					if (PointsRepartition.existskey(I)) {
-						Points = 0 - PointsRepartition[I];
+					if(S_IncreasePointsLooseEachEliminated == True) {
+						if (PointsRepartition.existskey(I+G_NbOfPlayersEliminated)) {
+							Points = 0 - PointsRepartition[I+G_NbOfPlayersEliminated];
+						} else {
+							Points = 0 - PointsRepartition[PointsRepartition.count - 1];
+						}
 					} else {
-						Points = 0 - PointsRepartition[PointsRepartition.count - 1];
+						if (PointsRepartition.existskey(I)) {
+							Points = 0 - PointsRepartition[I];
+						} else {
+							Points = 0 - PointsRepartition[PointsRepartition.count - 1];
+						}
 					}
 				}
 				
@@ -537,7 +552,7 @@ Void ComputeScores() {
 	declare NbOfEliminated = 0;
 	declare NbOfFinalistEliminated = 0;
 	declare NewEliminated = False;
-	declare Text[] EliminatedNames;
+	declare CUser[] EliminatedUsers;
 	
 	Race::SortScores(Race::C_Sort_TotalPoints);
 
@@ -568,7 +583,7 @@ Void ComputeScores() {
 					Scores::SetPlayerMatchPoints(Player.Score, -2000);
 					NbOfEliminated += 1;
 					NewEliminated = True;
-					EliminatedNames.add(Player.User.Name);
+					EliminatedUsers.add(Player.User);
 				}
 			}
 			// New looser
@@ -576,7 +591,7 @@ Void ComputeScores() {
 				Scores::SetPlayerMatchPoints(Player.Score, -2000);
 				NbOfEliminated += 1;
 				NewEliminated = True;
-				EliminatedNames.add(Player.User.Name);
+				EliminatedUsers.add(Player.User);
 			}
 			// Already finalist and not last
 			else if (Scores::GetPlayerMatchPoints(Player.Score) == -1000 && Scores::GetPlayerRoundPoints(Player.Score) != MaxRoundPoints) {
@@ -595,8 +610,8 @@ Void ComputeScores() {
 	}
 
 	if(NewEliminated == True) {
-		foreach (EliminatedName in EliminatedNames) {
-			AnnounceEliminated(EliminatedName, NbOfEliminated);
+		foreach (EliminatedUser in EliminatedUsers) {
+			AnnounceEliminated(EliminatedUser, NbOfEliminated);
 		}
 	}
 	
@@ -648,6 +663,8 @@ Boolean MatchIsOver() {
 	declare PlayerEliminatedLimit = ML::Max(Players.count - 1, 1);
 	Log::Log("""[Cup] Match is over ? {{{(S_NbOfWinners >= NbOfPlayersActive)}}} | ({{{S_NbOfWinners}}} >= {{{NbOfPlayersActive}}})""");
 	if (S_NbOfWinners >= NbOfPlayersActive) return True;
+
+	Log::Log("[Cup] MatchIsOver() | G_NbOfPlayersEliminated : "^G_NbOfPlayersEliminated^" | Players.count : "^Players.count^" | G_NbOfPlayersTotal : "^G_NbOfPlayersTotal^" | G_PlayersParticipants : "^G_PlayersParticipants.tojson()^" | G_PlayersEliminated : "^G_PlayersEliminated.tojson());
 	
 	return False;
 }
@@ -659,6 +676,8 @@ Boolean MatchIsOver() {
  */
 Void ResetMatch() {
 	Log::Log("[Cup] ResetMatch() check | S_PointsStartup : "^S_PointsStartup);
+	G_NbOfPlayersEliminated = 0;
+	G_PlayersEliminated.clear();
 	G_PlayersParticipants.clear();
 	declare Text[][Text] CustomPoints;
 	foreach (Player in AllPlayers) {
@@ -671,6 +690,21 @@ Void ResetMatch() {
 		}
 	}
 	UIModules_ScoresTable::SetCustomPoints(CustomPoints);
+	Log::Log("[Cup] ---------------- SETTINGS ---------------");
+	Log::Log("[Cup] S_ScriptEnvironment = " ^ S_ScriptEnvironment);
+	Log::Log("[Cup] S_PointsStartup = " ^ S_PointsStartup);
+	Log::Log("[Cup] S_FinishTimeout = " ^ S_FinishTimeout);
+	Log::Log("[Cup] S_RoundsPerMap = " ^ S_RoundsPerMap);
+	Log::Log("[Cup] S_NbOfWinners = " ^ S_NbOfWinners);
+	Log::Log("[Cup] S_WarmUpNb = " ^ S_WarmUpNb);
+	Log::Log("[Cup] S_WarmUpDuration = " ^ S_WarmUpDuration);
+	Log::Log("[Cup] S_WarmUpTimeout = " ^ S_WarmUpTimeout);
+	Log::Log("[Cup] S_DisableFinalist = " ^ S_DisableFinalist);
+	Log::Log("[Cup] S_AllowFastForwardRounds = " ^ S_AllowFastForwardRounds);
+	Log::Log("[Cup] S_PointsRepartition = " ^ S_PointsRepartition);
+	Log::Log("[Cup] S_IncreasePointsLooseEachEliminated = " ^ S_IncreasePointsLooseEachEliminated);
+	Log::Log("[Cup] S_DNF_LossPoints = " ^ S_DNF_LossPoints);
+	Log::Log("[Cup] S_Finalist_DNF_Mode = " ^ S_Finalist_DNF_Mode);
 }
 
 
